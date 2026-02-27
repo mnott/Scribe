@@ -1,14 +1,27 @@
 {
   "name": "@tekmidian/scribe",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for media transcription — YouTube, podcasts, and more",
   "type": "module",
   "bin": {
     "scribe-mcp": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "dist/index.js",
-  "keywords": ["mcp", "scribe", "youtube", "transcription", "captions", "subtitles", "claude", "claude-code", "mcp-server", "media"],
+  "keywords": [
+    "mcp",
+    "scribe",
+    "youtube",
+    "transcription",
+    "captions",
+    "subtitles",
+    "claude",
+    "claude-code",
+    "mcp-server",
+    "media"
+  ],
   "author": "Matthias Nott <mnott@mnsoft.org>",
   "repository": {
     "type": "git",
