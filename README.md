@@ -31,10 +31,18 @@ The server runs as a local process. Claude connects over stdio via the MCP proto
 - [Claude Desktop](https://claude.ai/download) or [Claude Code](https://claude.ai/code)
 - [Node.js](https://nodejs.org) 18+ **or** [Bun](https://bun.sh) 1.0+
 
-### Install via Claude Code
+### Install with Claude Code
+
+Tell Claude:
+
+> *"Install the scribe MCP server from github.com/mnott/Scribe"*
+
+Claude will clone the repo, build it, and add it to your MCP config.
+
+Or use the CLI directly:
 
 ```bash
-claude mcp add scribe-mcp -- npx -y scribe-mcp
+claude mcp add scribe-mcp -- npx -y @tekmidian/scribe
 ```
 
 ### Manual install (Claude Desktop)
