@@ -1,6 +1,6 @@
 {
   "name": "@tekmidian/scribe",
-  "version": "0.1.1",
+  "version": "0.2.1",
   "description": "MCP server for media transcription — YouTube, podcasts, and more",
   "type": "module",
   "bin": {
@@ -20,7 +20,12 @@
     "claude",
     "claude-code",
     "mcp-server",
-    "media"
+    "media",
+    "article",
+    "pdf",
+    "web-scraping",
+    "content-extraction",
+    "readability"
   ],
   "author": "Matthias Nott <mnott@mnsoft.org>",
   "repository": {
@@ -36,7 +41,9 @@
     "inspector": "npx @modelcontextprotocol/inspector bun src/index.ts"
   },
   "dependencies": {
+    "@extractus/article-extractor": "^8.0.20",
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "unpdf": "^1.4.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {

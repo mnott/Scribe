@@ -35,3 +35,26 @@ export class TranscriptionError extends ScribeError {
     }
   }
 }
+
+export class ProviderNotFoundError extends ScribeError {
+  constructor(input: string) {
+    super(
+      `No provider found for: "${input}". Use the list_providers tool to see available providers.`
+    );
+  }
+}
+
+export class ExtractionError extends ScribeError {
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    if (cause instanceof Error) {
+      this.cause = cause;
+    }
+  }
+}
+
+export class ClaudeAuthError extends ScribeError {
+  constructor(message: string) {
+    super(message);
+  }
+}
