@@ -45,7 +45,37 @@ Or use the CLI directly:
 claude mcp add scribe-mcp -- npx -y @tekmidian/scribe
 ```
 
-### Manual install (Claude Desktop)
+### Manual install
+
+#### Claude Code
+
+Add to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "scribe": {
+      "command": "npx",
+      "args": ["-y", "scribe-mcp"]
+    }
+  }
+}
+```
+
+Or with Bun (faster):
+
+```json
+{
+  "mcpServers": {
+    "scribe": {
+      "command": "bunx",
+      "args": ["scribe-mcp"]
+    }
+  }
+}
+```
+
+#### Claude Desktop
 
 Add the following to your `claude_desktop_config.json`:
 
@@ -236,6 +266,8 @@ Available languages for dQw4w9WgXcQ:
 ## Configuration
 
 Scribe has no configuration file. All behavior is controlled by parameters passed per-request. The server runs on stdio and exits when the client disconnects.
+
+The JSON snippets below work for both Claude Code (`~/.claude.json`) and Claude Desktop (`claude_desktop_config.json`) — just drop them into the `mcpServers` block of whichever config file you use.
 
 **npx (Node.js):**
 
