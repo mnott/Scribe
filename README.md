@@ -1,8 +1,12 @@
-# Scribe — YouTube transcript extraction for Claude
+---
+links: "[[Ideaverse/AI/Scribe/Scribe|Scribe]]"
+---
 
-Scribe is an MCP server that extracts transcripts and captions from YouTube videos, giving Claude the ability to read, summarize, and analyze video content without watching it.
+# Scribe — Content extraction for Claude
 
-Scribe speaks directly to YouTube's Innertube API using an Android client context — no API keys, no third-party services, no credentials to manage. It bypasses EU/GDPR consent gates automatically, handles both manual and auto-generated captions, and outputs transcripts in plain text, SRT subtitle format, or structured JSON with millisecond-accurate timing data.
+Scribe is an MCP server that extracts content from multiple sources — YouTube videos, web articles, PDFs, and Claude.ai conversations — giving Claude the ability to read and work with content from anywhere.
+
+**4 providers, one tool:** `extract_content` auto-detects the source type and routes to the right provider. YouTube transcripts come from the Innertube API (no API keys needed), articles use Readability extraction, PDFs are parsed locally, and Claude.ai conversations are downloaded directly from the web UI API.
 
 ## How It Works
 
@@ -13,16 +17,17 @@ Claude (AI client)
        v
   scribe-mcp server
        |
-       |-- 1. Fetch youtube.com watch page (extract embedded JSON + cookies)
-       |-- 2. POST /youtubei/v1/get_transcript (Android client context)
-       |-- 3. Parse transcript segment list from API response
+       |-- extract_content auto-routes by URL:
+       |     youtube.com/*  → YouTube provider (Innertube API)
+       |     claude.ai/*    → Claude provider (web UI API)
+       |     *.pdf          → PDF provider (local parsing)
+       |     any other URL  → Article provider (Readability)
        |
        v
-  Transcript returned to Claude
-  (text / SRT / JSON with timing)
+  Clean text/markdown returned to Claude
 ```
 
-The server runs as a local process. Claude connects over stdio via the MCP protocol. No data leaves your machine except the requests to YouTube's own endpoints.
+The server runs as a local process. Claude connects over stdio via the MCP protocol.
 
 ## Quick Start
 
@@ -132,88 +137,136 @@ Then point your MCP config at the built binary:
 
 | Tool | What it does |
 |------|-------------|
-| `youtube_transcribe` | Fetch the transcript for a YouTube video in text, SRT, or JSON format |
+| `extract_content` | Extract content from any supported source — auto-detects the provider |
+| `list_providers` | Show all available providers and their capabilities |
+| `youtube_transcribe` | Fetch YouTube transcript in text, SRT, or JSON format |
 | `youtube_list_languages` | List every caption language available for a video |
+
+## Providers
+
+| Provider | Sources | Output |
+|----------|---------|--------|
+| **youtube** | YouTube videos (all URL formats + bare IDs) | Text, SRT, JSON with timing |
+| **claude** | Claude.ai chats and projects | Markdown with metadata |
+| **pdf** | PDF files (URLs or local paths) | Plain text |
+| **article** | Any web page | Clean text via Readability |
 
 ## User Guide
 
-Scribe gives Claude the ability to read YouTube videos as text. Just describe what you want in plain language.
+Just give Claude a URL. Scribe auto-detects the source type.
 
-### Get a transcript
-
-```
-Transcribe this YouTube video: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-```
+### YouTube videos
 
 ```
-Get the transcript of this talk: https://youtu.be/abc123xyz11
+Summarize this YouTube video: https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
-
-```
-Can you read this video for me? https://youtube.com/shorts/def456uvw22
-```
-
-### Change the language
 
 ```
 Get me the German transcript of this lecture: [url]
 ```
 
 ```
-I need the Spanish subtitles for this video: [url]
-```
-
-```
-Transcribe this video in French
-```
-
-### Discover available languages
-
-```
-What languages are available for this video? [url]
-```
-
-```
-Does this talk have Japanese captions?
-```
-
-### Choose an output format
-
-```
-Give me the SRT subtitles for this video: [url]
-```
-
-```
 Return the transcript as JSON with timing data: [url]
 ```
 
-```
-Get the transcript with timestamps included: [url]
-```
-
-### Ask Claude to analyze the content
+### Claude.ai conversations
 
 ```
-Summarize this YouTube video: [url]
+Download this conversation: https://claude.ai/chat/550e8400-e29b-41d4-a716-446655440000
 ```
 
 ```
-Extract the key points from this lecture: [url]
+Get all conversations from this project: https://claude.ai/project/550e8400-e29b-41d4-a716-446655440000
+```
+
+### Web articles
+
+```
+Extract the content from this article: https://example.com/interesting-post
+```
+
+### PDFs
+
+```
+Read this PDF: https://example.com/paper.pdf
 ```
 
 ```
-What are the main arguments made in this talk? [url]
+Extract text from /Users/me/Documents/report.pdf
+```
+
+### Analyze anything
+
+```
+Summarize this: [any supported URL]
 ```
 
 ```
-Find every mention of "machine learning" in this video and the timestamp it appears: [url]
+Extract the key points from this: [any supported URL]
 ```
 
+## Claude.ai Provider Setup
+
+The Claude provider downloads conversations from the Claude.ai web UI. It requires a session cookie for authentication. Three options:
+
+**Option A — Playwright (automated, recommended if you have Playwright MCP):**
+
+Ask Claude Code to navigate to claude.ai and extract cookies:
+
 ```
-Translate the transcript of this video into English: [url]
+Navigate to claude.ai and extract all cookies, save them as JSON to ~/claude-cookies.json
 ```
+
+Then add to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "scribe": {
+      "command": "npx",
+      "args": ["-y", "@tekmidian/scribe"],
+      "env": {
+        "CLAUDE_COOKIES_FILE": "/Users/you/claude-cookies.json"
+      }
+    }
+  }
+}
+```
+
+**Option B — Browser extension:**
+
+Install a cookie export extension (e.g. "Cookie-Editor"), export claude.ai cookies as JSON, and set `CLAUDE_COOKIES_FILE` as above.
+
+**Option C — Manual:**
+
+Open claude.ai → F12 → Application → Cookies → copy the `sessionKey` value:
+
+```json
+{
+  "env": {
+    "CLAUDE_SESSION_KEY": "sk-ant-sid01-..."
+  }
+}
+```
+
+Without either env var, the Claude provider is silently disabled — other providers still work normally.
 
 ## MCP Tool Reference
+
+### extract_content
+
+Extracts content from any supported source. Auto-detects the provider based on the URL.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `url` | string | yes | — | URL or file path to extract content from |
+| `format` | string | no | `text` | Output format (available formats depend on provider) |
+| `language` | string | no | — | Preferred language code (YouTube only) |
+| `timestamps` | boolean | no | `false` | Include timestamps (YouTube text format only) |
+
+### list_providers
+
+Lists all available providers and their capabilities. No parameters.
 
 ### youtube_transcribe
 
@@ -265,48 +318,13 @@ Available languages for dQw4w9WgXcQ:
 
 ## Configuration
 
-Scribe has no configuration file. All behavior is controlled by parameters passed per-request. The server runs on stdio and exits when the client disconnects.
+All behavior is controlled by parameters passed per-request. Optional environment variables enable the Claude.ai provider:
 
-The JSON snippets below work for both Claude Code (`~/.claude.json`) and Claude Desktop (`claude_desktop_config.json`) — just drop them into the `mcpServers` block of whichever config file you use.
-
-**npx (Node.js):**
-
-```json
-{
-  "mcpServers": {
-    "scribe": {
-      "command": "npx",
-      "args": ["-y", "scribe-mcp"]
-    }
-  }
-}
-```
-
-**bunx (Bun):**
-
-```json
-{
-  "mcpServers": {
-    "scribe": {
-      "command": "bunx",
-      "args": ["scribe-mcp"]
-    }
-  }
-}
-```
-
-**Local build:**
-
-```json
-{
-  "mcpServers": {
-    "scribe": {
-      "command": "node",
-      "args": ["/path/to/Scribe/dist/index.js"]
-    }
-  }
-}
-```
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `CLAUDE_COOKIES_FILE` | no | Path to browser cookie export JSON (claude.ai provider) |
+| `CLAUDE_SESSION_KEY` | no | Direct session key value (claude.ai provider) |
+| `CLAUDE_ORG_ID` | no | Organization ID (auto-discovered if not set) |
 
 ## Troubleshooting
 
@@ -336,14 +354,13 @@ If you transcribe many videos in rapid succession, YouTube may temporarily throt
 - An MCP-compatible client (Claude Desktop, Claude Code, or any MCP-aware host)
 - Internet access to reach `youtube.com` and `www.youtube.com/youtubei/v1/`
 
-No API keys. No accounts. No external dependencies beyond the MCP SDK and Zod.
+No API keys needed for YouTube, articles, or PDFs. Claude.ai provider requires a session cookie (see setup above).
 
 ## Coming soon
 
 - Vimeo transcript extraction
 - Direct audio/video file transcription
 - Podcast RSS feed support
-- SoundCloud track transcription
 
 ## License
 
@@ -352,3 +369,6 @@ MIT
 ## Author
 
 Matthias Nott — [github.com/mnott](https://github.com/mnott)
+
+---
+*Links:* [[Ideaverse/AI/Scribe/Scribe|Scribe]]
